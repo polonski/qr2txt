@@ -1,297 +1,166 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Live QR Code Generator (Pure JS)</title>
-  <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0f172a;
-      color: #e2e8f0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem;
-    }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BSB + Account QR Generator</title>
 
-    h1 {
-      margin-bottom: 0.5rem;
-    }
+    <!-- QRCode.js CDN (GitHub Pages compatible) -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
-    p {
-      opacity: 0.8;
-      max-width: 600px;
-      text-align: center;
-    }
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
 
-    input {
-      width: 100%;
-      max-width: 600px;
-      padding: 0.75rem;
-      margin: 1rem 0;
-      border-radius: 8px;
-      border: none;
-      font-size: 1rem;
-    }
+        h1 {
+            margin-bottom: 0.5rem;
+        }
 
-    canvas {
-      background: white;
-      padding: 1rem;
-      border-radius: 12px;
-      margin-top: 1rem;
-    }
+        p {
+            opacity: 0.8;
+            max-width: 600px;
+            text-align: center;
+        }
 
-    pre {
-      margin-top: 1rem;
-      max-width: 600px;
-      overflow-x: auto;
-      background: #1e293b;
-      padding: 1rem;
-      border-radius: 8px;
-      font-size: 0.75rem;
-    }
+        .form-group {
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 1rem;
+            display: flex;
+            flex-direction: column;
+        }
 
-    footer {
-      margin-top: 2rem;
-      font-size: 0.8rem;
-      opacity: 0.6;
-    }
-  </style>
+        label {
+            margin-bottom: 0.3rem;
+            font-weight: 600;
+        }
+
+        input {
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: none;
+            font-size: 1rem;
+        }
+
+        #qrContainer {
+            background: white;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-top: 1rem;
+        }
+
+        .output-box {
+            margin-top: 1rem;
+            max-width: 600px;
+            width: 100%;
+            background: #1e293b;
+            padding: 1rem;
+            border-radius: 8px;
+            word-break: break-word;
+            font-size: 0.9rem;
+        }
+
+        footer {
+            margin-top: 2rem;
+            font-size: 0.8rem;
+            opacity: 0.6;
+            text-align: center;
+        }
+    </style>
 </head>
+
 <body>
 
-  <h1>Live QR Code Generator</h1>
-  <p>
-    Type text below. The QR code updates automatically.  
-    When scanned, your phone will show the exact text you entered.
-  </p>
+    <h1>BSB + Account QR Generator</h1>
 
-  <input id="textInput" type="text" placeholder="Enter text to encode..." />
+    <p>
+        Enter numeric BSB and Account values.
+        <strong>Scan the QR code with your phone and use it in the bank transfer form.</strong>.
+    </p>
 
-  <canvas id="qrCanvas"></canvas>
+    <div class="form-group">
+        <label for="bsbInput">BSB</label>
+        <input id="bsbInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="e.g. 123456"
+            autocomplete="off" />
+    </div>
 
-  <pre id="matrixOutput"></pre>
+    <div class="form-group">
+        <label for="accountInput">ACCOUNT</label>
+        <input id="accountInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="12"
+            placeholder="e.g. 123456789" autocomplete="off" />
+    </div>
 
-  <footer>
-    Pure JavaScript implementation — no external libraries.
-  </footer>
+    <div id="qrContainer"></div>
 
-  <script>
-    /*
-      Minimal QR Generator (Version 1-L)
-      --------------------------------------------------
-      Educational implementation:
-      - Byte mode only
-      - Version 1 (21x21)
-      - Error Correction Level L
-      - Reed-Solomon implemented from scratch
-      - Mask selection via penalty scoring (ISO-like rules)
-      --------------------------------------------------
-    */
+    <div class="output-box">
+        <strong>Encoded Value:</strong>
+        <div id="encodedOutput"></div>
+    </div>
 
-    const canvas = document.getElementById("qrCanvas");
-    const ctx = canvas.getContext("2d");
-    const matrixOutput = document.getElementById("matrixOutput");
-    const input = document.getElementById("textInput");
+    <footer>
+        Scan above QR code.
+    </footer>
 
-    const SIZE = 21; // Version 1
-    const SCALE = 8;
-    canvas.width = SIZE * SCALE;
-    canvas.height = SIZE * SCALE;
+    <script>
+        const bsbInput = document.getElementById("bsbInput");
+        const accountInput = document.getElementById("accountInput");
+        const encodedOutput = document.getElementById("encodedOutput");
+        const qrContainer = document.getElementById("qrContainer");
 
-    // ---------------------------
-    // Galois Field 256 (QR spec)
-    // ---------------------------
-    const GF_EXP = new Array(512);
-    const GF_LOG = new Array(256);
+        const qr = new QRCode(qrContainer, {
+            text: "",
+            width: 256,
+            height: 256,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+        });
 
-    (function initGF() {
-      let x = 1;
-      for (let i = 0; i < 255; i++) {
-        GF_EXP[i] = x;
-        GF_LOG[x] = i;
-        x <<= 1;
-        if (x & 0x100) x ^= 0x11d;
-      }
-      for (let i = 255; i < 512; i++) {
-        GF_EXP[i] = GF_EXP[i - 255];
-      }
-    })();
-
-    function gfMul(a, b) {
-      if (a === 0 || b === 0) return 0;
-      return GF_EXP[GF_LOG[a] + GF_LOG[b]];
-    }
-
-    // ---------------------------
-    // Reed-Solomon (7 EC bytes)
-    // ---------------------------
-    function reedSolomon(data, ecLength = 7) {
-      let poly = new Array(ecLength).fill(0);
-      for (let byte of data) {
-        let factor = byte ^ poly[0];
-        poly.shift();
-        poly.push(0);
-        for (let i = 0; i < ecLength; i++) {
-          poly[i] ^= gfMul(factor, RS_GENERATOR[i]);
+        // Enforce numeric-only input (hard validation layer)
+        function numericOnly(e) {
+            e.target.value = e.target.value.replace(/\D/g, "");
         }
-      }
-      return poly;
-    }
 
-    const RS_GENERATOR = [87, 229, 146, 149, 238, 102, 21];
+        bsbInput.addEventListener("input", numericOnly);
+        accountInput.addEventListener("input", numericOnly);
 
-    // ---------------------------
-    // Encode Text (Byte mode)
-    // ---------------------------
-    function encodeData(text) {
-      const bytes = new TextEncoder().encode(text);
-      if (bytes.length > 17) {
-        alert("Max 17 characters for Version 1-L QR.");
-        return null;
-      }
+        // Debounced QR update (prevents excessive regeneration)
+        let debounceTimer;
+        function updateQR() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const bsb = bsbInput.value;
+                const account = accountInput.value;
 
-      let bits = [];
+                if (!bsb && !account) {
+                    qr.clear();
+                    encodedOutput.textContent = "";
+                    return;
+                }
 
-      // Mode indicator: 0100
-      bits.push(0,1,0,0);
+                // Deterministic concatenation algorithm:
+                // We explicitly concatenate without separators
+                // so scanning yields raw numeric string only.
+                const combined = bsb + account;
 
-      // Length (8 bits)
-      for (let i = 7; i >= 0; i--) {
-        bits.push((bytes.length >> i) & 1);
-      }
-
-      // Data
-      for (let b of bytes) {
-        for (let i = 7; i >= 0; i--) {
-          bits.push((b >> i) & 1);
+                qr.clear();
+                qr.makeCode(combined);
+                encodedOutput.textContent = combined;
+            }, 120);
         }
-      }
 
-      // Terminator
-      while (bits.length % 8 !== 0) bits.push(0);
-
-      let data = [];
-      for (let i = 0; i < bits.length; i += 8) {
-        let byte = 0;
-        for (let j = 0; j < 8; j++) {
-          byte = (byte << 1) | bits[i + j];
-        }
-        data.push(byte);
-      }
-
-      // Pad
-      const PAD = [0xec, 0x11];
-      let i = 0;
-      while (data.length < 19) {
-        data.push(PAD[i++ % 2]);
-      }
-
-      return data;
-    }
-
-    // ---------------------------
-    // Build QR Matrix
-    // ---------------------------
-    function createMatrix(data) {
-      const matrix = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
-
-      function drawFinder(x, y) {
-        for (let r = -1; r <= 7; r++) {
-          for (let c = -1; c <= 7; c++) {
-            let rr = y + r, cc = x + c;
-            if (rr < 0 || cc < 0 || rr >= SIZE || cc >= SIZE) continue;
-            if (
-              (r >= 0 && r <= 6 && (c === 0 || c === 6)) ||
-              (c >= 0 && c <= 6 && (r === 0 || r === 6)) ||
-              (r >= 2 && r <= 4 && c >= 2 && c <= 4)
-            ) matrix[rr][cc] = 1;
-            else matrix[rr][cc] = 0;
-          }
-        }
-      }
-
-      drawFinder(0, 0);
-      drawFinder(SIZE - 7, 0);
-      drawFinder(0, SIZE - 7);
-
-      // Timing
-      for (let i = 8; i < SIZE - 8; i++) {
-        matrix[6][i] = i % 2;
-        matrix[i][6] = i % 2;
-      }
-
-      // Data placement (zigzag)
-      let bits = [];
-      for (let byte of data) {
-        for (let i = 7; i >= 0; i--) {
-          bits.push((byte >> i) & 1);
-        }
-      }
-
-      let row = SIZE - 1;
-      let col = SIZE - 1;
-      let dir = -1;
-      let bitIndex = 0;
-
-      while (col > 0) {
-        if (col === 6) col--;
-        for (let i = 0; i < SIZE; i++) {
-          let r = row + dir * i;
-          if (r < 0 || r >= SIZE) continue;
-          for (let cOffset = 0; cOffset < 2; cOffset++) {
-            let c = col - cOffset;
-            if (matrix[r][c] === null) {
-              matrix[r][c] = bits[bitIndex++] ?? 0;
-            }
-          }
-        }
-        row += dir * (SIZE - 1);
-        dir *= -1;
-        col -= 2;
-      }
-
-      return matrix;
-    }
-
-    function draw(matrix) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (let r = 0; r < SIZE; r++) {
-        for (let c = 0; c < SIZE; c++) {
-          ctx.fillStyle = matrix[r][c] ? "#000" : "#fff";
-          ctx.fillRect(c * SCALE, r * SCALE, SCALE, SCALE);
-        }
-      }
-
-      matrixOutput.textContent = matrix
-        .map(row => row.map(v => (v ? "██" : "  ")).join(""))
-        .join("\n");
-    }
-
-    function generateQR(text) {
-      if (!text) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        matrixOutput.textContent = "";
-        return;
-      }
-
-      const data = encodeData(text);
-      if (!data) return;
-
-      const ec = reedSolomon(data);
-      const fullData = data.concat(ec);
-
-      const matrix = createMatrix(fullData);
-      draw(matrix);
-    }
-
-    input.addEventListener("input", e => {
-      generateQR(e.target.value);
-    });
-
-    generateQR("Hello QR!");
-  </script>
+        bsbInput.addEventListener("input", updateQR);
+        accountInput.addEventListener("input", updateQR);
+    </script>
 
 </body>
+
 </html>
