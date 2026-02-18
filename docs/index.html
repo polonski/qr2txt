@@ -4,13 +4,17 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BSB & Account QR Generator</title>
+    <title>QR BSB and ACCOUNT</title>
 
     <!-- QRCode.js CDN (GitHub Pages compatible) -->
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
     <style>
         #bsbInput {
+            font-size: clamp(1.5rem, 6vw, 3rem);
+        }
+
+        #accountInput {
             font-size: clamp(1.5rem, 6vw, 3rem);
         }
 
@@ -95,7 +99,6 @@
     <h1>BSB & Account QR Generator</h1>
 
     <p>
-
         <strong>Scan the QR code with your phone and use it in the bank transfer form.</strong>.
     </p>
 
@@ -126,7 +129,7 @@
     </div>
 
     <footer>
-        Uses QRCode.js via CDN — compatible with GitHub Pages.
+       
     </footer>
 
     <script>
