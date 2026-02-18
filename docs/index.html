@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BSB + Account QR Generator</title>
+    <title>BSB & Account QR Generator</title>
 
     <!-- QRCode.js CDN (GitHub Pages compatible) -->
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
@@ -26,50 +26,59 @@
 
         p {
             opacity: 0.8;
-            max-width: 600px;
+            max-width: 700px;
             text-align: center;
         }
 
-        .form-group {
-            width: 100%;
-            max-width: 400px;
-            margin-bottom: 1rem;
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin-top: 2rem;
+            justify-content: center;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 1.5rem;
+            border-radius: 12px;
+            width: 320px;
             display: flex;
             flex-direction: column;
+            align-items: center;
         }
 
         label {
-            margin-bottom: 0.3rem;
+            align-self: flex-start;
             font-weight: 600;
+            margin-bottom: 0.4rem;
         }
 
         input {
-            padding: 0.75rem;
+            width: 100%;
+            padding: 0.7rem;
             border-radius: 8px;
             border: none;
             font-size: 1rem;
+            margin-bottom: 1rem;
         }
 
-        #qrContainer {
+        .qr-wrapper {
             background: white;
             padding: 1rem;
-            border-radius: 12px;
-            margin-top: 1rem;
+            border-radius: 10px;
         }
 
-        .output-box {
+        .encoded-text {
             margin-top: 1rem;
-            max-width: 600px;
-            width: 100%;
-            background: #1e293b;
-            padding: 1rem;
-            border-radius: 8px;
+            font-size: 0.85rem;
             word-break: break-word;
-            font-size: 0.9rem;
+            text-align: center;
+            opacity: 0.85;
         }
 
         footer {
-            margin-top: 2rem;
+            margin-top: 3rem;
             font-size: 0.8rem;
             opacity: 0.6;
             text-align: center;
@@ -79,52 +88,76 @@
 
 <body>
 
-    <h1>BSB + Account QR Generator</h1>
+    <h1>BSB & Account QR Generator</h1>
 
     <p>
         Enter numeric BSB and Account values.
         <strong>Scan the QR code with your phone and use it in the bank transfer form.</strong>.
     </p>
 
-    <div class="form-group">
-        <label for="bsbInput">BSB</label>
-        <input id="bsbInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="e.g. 123456"
-            autocomplete="off" />
-    </div>
+    <div class="container">
 
-    <div class="form-group">
-        <label for="accountInput">ACCOUNT</label>
-        <input id="accountInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="12"
-            placeholder="e.g. 123456789" autocomplete="off" />
-    </div>
+        <!-- BSB CARD -->
+        <div class="card">
+            <label for="bsbInput">BSB</label>
+            <input id="bsbInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+                placeholder="Enter 6-digit BSB" autocomplete="off" />
 
-    <div id="qrContainer"></div>
+            <div class="qr-wrapper" id="bsbQR"></div>
 
-    <div class="output-box">
-        <strong>Encoded Value:</strong>
-        <div id="encodedOutput"></div>
+            <div class="encoded-text">
+                Encoded: <span id="bsbEncoded"></span>
+            </div>
+        </div>
+
+        <!-- ACCOUNT CARD -->
+        <div class="card">
+            <label for="accountInput">ACCOUNT</label>
+            <input id="accountInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="12"
+                placeholder="Enter Account Number" autocomplete="off" />
+
+            <div class="qr-wrapper" id="accountQR"></div>
+
+            <div class="encoded-text">
+                Encoded: <span id="accountEncoded"></span>
+            </div>
+        </div>
+
     </div>
 
     <footer>
-        Scan above QR code.
+        Uses QRCode.js via CDN — compatible with GitHub Pages.
     </footer>
 
     <script>
         const bsbInput = document.getElementById("bsbInput");
         const accountInput = document.getElementById("accountInput");
-        const encodedOutput = document.getElementById("encodedOutput");
-        const qrContainer = document.getElementById("qrContainer");
 
-        const qr = new QRCode(qrContainer, {
+        const bsbEncoded = document.getElementById("bsbEncoded");
+        const accountEncoded = document.getElementById("accountEncoded");
+
+        const bsbQRContainer = document.getElementById("bsbQR");
+        const accountQRContainer = document.getElementById("accountQR");
+
+        const bsbQR = new QRCode(bsbQRContainer, {
             text: "",
-            width: 256,
-            height: 256,
+            width: 220,
+            height: 220,
             colorDark: "#000000",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.M
         });
 
-        // Enforce numeric-only input (hard validation layer)
+        const accountQR = new QRCode(accountQRContainer, {
+            text: "",
+            width: 220,
+            height: 220,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+        });
+
+        // Strict numeric enforcement
         function numericOnly(e) {
             e.target.value = e.target.value.replace(/\D/g, "");
         }
@@ -132,33 +165,36 @@
         bsbInput.addEventListener("input", numericOnly);
         accountInput.addEventListener("input", numericOnly);
 
-        // Debounced QR update (prevents excessive regeneration)
-        let debounceTimer;
-        function updateQR() {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                const bsb = bsbInput.value;
-                const account = accountInput.value;
+        // Debounced update function factory (clever reusable pattern)
+        function createQRUpdater(inputEl, qrInstance, outputEl) {
+            let timer;
+            return function () {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    const value = inputEl.value;
 
-                if (!bsb && !account) {
-                    qr.clear();
-                    encodedOutput.textContent = "";
-                    return;
-                }
+                    if (!value) {
+                        qrInstance.clear();
+                        outputEl.textContent = "";
+                        return;
+                    }
 
-                // Deterministic concatenation algorithm:
-                // We explicitly concatenate without separators
-                // so scanning yields raw numeric string only.
-                const combined = bsb + account;
+                    // Force plain-text interpretation
+                    const payload = "TEXT:" + value;
 
-                qr.clear();
-                qr.makeCode(combined);
-                encodedOutput.textContent = combined;
-            }, 120);
+                    qrInstance.clear();
+                    qrInstance.makeCode(payload);
+
+                    outputEl.textContent = payload;
+                }, 120);
+            };
         }
 
-        bsbInput.addEventListener("input", updateQR);
-        accountInput.addEventListener("input", updateQR);
+        const updateBSB = createQRUpdater(bsbInput, bsbQR, bsbEncoded);
+        const updateAccount = createQRUpdater(accountInput, accountQR, accountEncoded);
+
+        bsbInput.addEventListener("input", updateBSB);
+        accountInput.addEventListener("input", updateAccount);
     </script>
 
 </body>
