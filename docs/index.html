@@ -4,161 +4,118 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>QR BSB and ACCOUNT</title>
+    <title>QR Payment Sign Generator</title>
 
     <!-- QRCode.js CDN (GitHub Pages compatible) -->
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <!-- Tailwind CSS for modern UI and transparency utilities -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        #bsbInput {
-            font-size: clamp(1.5rem, 6vw, 3rem);
-        }
-
-        #accountInput {
-            font-size: clamp(1.5rem, 6vw, 3rem);
-        }
-
-        body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #0f172a;
-            color: #e2e8f0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 2rem;
-        }
-
-        h1 {
-            margin-bottom: 0.5rem;
-        }
-
-        p {
-            opacity: 0.8;
-            max-width: 700px;
-            text-align: center;
-        }
-
-        .container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 2rem;
-            margin-top: 2rem;
-            justify-content: center;
-        }
-
-        .card {
-            background: #1e293b;
-            padding: 1.5rem;
-            border-radius: 12px;
-            width: 320px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        label {
-            align-self: flex-start;
-            font-weight: 600;
-            margin-bottom: 0.4rem;
-        }
-
-        input {
-            width: 100%;
-            padding: 0.7rem;
-            border-radius: 8px;
-            border: none;
-            font-size: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .qr-wrapper {
-            background: white;
-            padding: 1rem;
-            border-radius: 10px;
-        }
-
-        .encoded-text {
-            margin-top: 1rem;
-            font-size: 0.85rem;
-            word-break: break-word;
-            text-align: center;
-            opacity: 0.85;
-        }
-
-        footer {
-            margin-top: 3rem;
-            font-size: 0.8rem;
-            opacity: 0.6;
-            text-align: center;
+        @media print {
+            body {
+                background-color: white !important;
+                color: black !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .card {
+                border: 2px solid #000;
+                box-shadow: none;
+                background: white !important;
+                color: black !important;
+                break-inside: avoid;
+            }
+            input {
+                color: black !important;
+            }
+            /* Ensure QR codes print clearly */
+            img {
+                max-width: 100% !important;
+            }
         }
     </style>
 </head>
 
-<body>
+<body class="bg-slate-900 text-slate-200 min-h-screen flex flex-col items-center py-8 font-sans">
 
-    <h1>BSB & Account QR Generator</h1>
+    <div class="no-print text-center mb-8 px-4 w-full max-w-3xl">
+        <h1 class="text-3xl font-bold mb-2">Payment Sign Generator</h1>
+        <p class="text-slate-400 mb-6">
+            Enter your business details below. The fields are transparent to look like a finished sign.
+            <br>Click "Print" to create a poster for your market stall.
+        </p>
+        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-full transition shadow-lg flex items-center justify-center mx-auto gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5Zm-3 0h.008v.008H15V10.5Z" />
+            </svg>
+            Print Sign
+        </button>
+    </div>
 
-    <p>
-        <strong>Scan the QR code with your phone and use it in the bank transfer form.</strong>.
-    </p>
+    <div class="container mx-auto flex flex-wrap justify-center gap-6 px-4">
 
-    <div class="container">
+        <!-- NAME CARD -->
+        <div class="card bg-slate-800 p-6 rounded-2xl shadow-xl w-full max-w-xs flex flex-col items-center border border-slate-700">
+            <label for="nameInput" class="text-xs font-bold tracking-wider text-slate-500 uppercase mb-1 w-full text-left">Pay To</label>
+            <!-- Transparent Input -->
+            <input id="nameInput" type="text" 
+                class="bg-transparent border-none text-center w-full outline-none text-2xl font-bold mb-4 text-white placeholder-slate-600 focus:ring-0" 
+                placeholder="Business Name" autocomplete="off" />
+            
+            <div class="bg-white p-4 rounded-xl shadow-inner" id="nameQR"></div>
+        </div>
 
         <!-- BSB CARD -->
-        <div class="card">
-            <label for="bsbInput">BSB</label>
+        <div class="card bg-slate-800 p-6 rounded-2xl shadow-xl w-full max-w-xs flex flex-col items-center border border-slate-700">
+            <label for="bsbInput" class="text-xs font-bold tracking-wider text-slate-500 uppercase mb-1 w-full text-left">BSB</label>
+            <!-- Transparent Input -->
             <input id="bsbInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6"
-                placeholder="Enter 6-digit BSB" autocomplete="off" />
+                class="bg-transparent border-none text-center w-full outline-none text-4xl font-mono font-bold mb-4 text-white placeholder-slate-600 focus:ring-0"
+                placeholder="000-000" autocomplete="off" />
 
-            <div class="qr-wrapper" id="bsbQR"></div>
-
-
+            <div class="bg-white p-4 rounded-xl shadow-inner" id="bsbQR"></div>
         </div>
 
         <!-- ACCOUNT CARD -->
-        <div class="card">
-            <label for="accountInput">ACCOUNT</label>
+        <div class="card bg-slate-800 p-6 rounded-2xl shadow-xl w-full max-w-xs flex flex-col items-center border border-slate-700">
+            <label for="accountInput" class="text-xs font-bold tracking-wider text-slate-500 uppercase mb-1 w-full text-left">Account No.</label>
+            <!-- Transparent Input -->
             <input id="accountInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="12"
-                placeholder="Enter Account Number" autocomplete="off" />
+                class="bg-transparent border-none text-center w-full outline-none text-3xl font-mono font-bold mb-4 text-white placeholder-slate-600 focus:ring-0"
+                placeholder="00000000" autocomplete="off" />
 
-            <div class="qr-wrapper" id="accountQR"></div>
-
-
+            <div class="bg-white p-4 rounded-xl shadow-inner" id="accountQR"></div>
         </div>
 
     </div>
 
-    <footer>
-       
+    <footer class="no-print mt-12 text-sm text-slate-600">
+        Generated for Australian Bank Transfers
     </footer>
 
     <script>
+        const nameInput = document.getElementById("nameInput");
         const bsbInput = document.getElementById("bsbInput");
         const accountInput = document.getElementById("accountInput");
 
-        const bsbEncoded = document.getElementById("bsbEncoded");
-        const accountEncoded = document.getElementById("accountEncoded");
-
+        const nameQRContainer = document.getElementById("nameQR");
         const bsbQRContainer = document.getElementById("bsbQR");
         const accountQRContainer = document.getElementById("accountQR");
 
-        const bsbQR = new QRCode(bsbQRContainer, {
+        const qrOptions = {
             text: "",
-            width: 220,
-            height: 220,
+            width: 200,
+            height: 200,
             colorDark: "#000000",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.M
-        });
+        };
 
-        const accountQR = new QRCode(accountQRContainer, {
-            text: "",
-            width: 220,
-            height: 220,
-            colorDark: "#000000",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.M
-        });
+        const nameQR = new QRCode(nameQRContainer, qrOptions);
+        const bsbQR = new QRCode(bsbQRContainer, qrOptions);
+        const accountQR = new QRCode(accountQRContainer, qrOptions);
 
         // Strict numeric enforcement
         function numericOnly(e) {
@@ -169,7 +126,7 @@
         accountInput.addEventListener("input", numericOnly);
 
         // Debounced update function factory (clever reusable pattern)
-        function createQRUpdater(inputEl, qrInstance, outputEl) {
+        function createQRUpdater(inputEl, qrInstance) {
             let timer;
             return function () {
                 clearTimeout(timer);
@@ -178,7 +135,6 @@
 
                     if (!value) {
                         qrInstance.clear();
-                        outputEl.textContent = "";
                         return;
                     }
 
@@ -187,15 +143,15 @@
 
                     qrInstance.clear();
                     qrInstance.makeCode(payload);
-
-                    outputEl.textContent = payload;
                 }, 120);
             };
         }
 
-        const updateBSB = createQRUpdater(bsbInput, bsbQR, bsbEncoded);
-        const updateAccount = createQRUpdater(accountInput, accountQR, accountEncoded);
+        const updateName = createQRUpdater(nameInput, nameQR);
+        const updateBSB = createQRUpdater(bsbInput, bsbQR);
+        const updateAccount = createQRUpdater(accountInput, accountQR);
 
+        nameInput.addEventListener("input", updateName);
         bsbInput.addEventListener("input", updateBSB);
         accountInput.addEventListener("input", updateAccount);
     </script>
